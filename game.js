@@ -131,7 +131,7 @@ window.addEventListener("load", () => {
 
     // 🔵 SMALL BLUE CURSOR (ALWAYS VISIBLE)
     ctx.beginPath();
-    ctx.arc(cursor.x, cursor.y, CURSOR_RADIUS, 0, Math.PI*2);
+    ctx.arc(cursor.x, cursor.y, CURSOR_RADIUS, 2, Math.PI*2);
     ctx.fillStyle = "#0066ff";
     ctx.fill();
 
