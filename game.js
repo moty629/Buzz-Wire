@@ -11,6 +11,13 @@ window.addEventListener("load", () => {
   const statsDiv = document.getElementById("stats");
   const levelsDiv = document.getElementById("levels");
 
+  /* ========= CONSTANTS ========= */
+  const PX_PER_METER = 100;
+  const CURSOR_RADIUS = 2;
+
+  const START = { x:40, y:210, w:35, h:35 };
+  const END   = { x:830, y:205, w:40, h:40 };
+
   /* ========= STATE ========= */
   let level = 0;
   let unlockedLevel = 0;
@@ -21,8 +28,12 @@ window.addEventListener("load", () => {
   let gameOver = false;
   let levelCompleted = false;
 
-  let cursor = { x: 0, y: 0 };
-  let lastCursor = { x: 0, y: 0 };
+  // 🔵 CURSOR STARTS AT START BOX (VISIBLE IMMEDIATELY)
+  let cursor = {
+    x: START.x + START.w / 2,
+    y: START.y + START.h / 2
+  };
+  let lastCursor = { ...cursor };
 
   let distancePx = 0;
 
@@ -30,12 +41,6 @@ window.addEventListener("load", () => {
   let startTime = 0;
   let elapsedTime = 0;
   let timerRunning = false;
-
-  /* ========= CONSTANTS ========= */
-  const PX_PER_METER = 100;
-  const CURSOR_RADIUS = 2;          // 🔵 SMALL BLUE CURSOR
-  const START = { x: 40,  y: 210, w: 35, h: 35 };
-  const END   = { x: 830, y: 205, w: 40, h: 40 };
 
   /* ========= CANVAS RESET ========= */
   function resetCanvas(){
@@ -60,7 +65,7 @@ window.addEventListener("load", () => {
 
   /* ========= LEVEL PATHS ========= */
   const levels = [
-    { w:14, p(){ ctx.moveTo(70,230); ctx.lineTo(860,230); } }, // 1 VERY EASY
+    { w:14, p(){ ctx.moveTo(70,230); ctx.lineTo(860,230); } },
     { w:10, p(){ ctx.moveTo(70,230); ctx.bezierCurveTo(250,230,500,230,860,230); } },
     { w:9,  p(){ ctx.moveTo(70,230); ctx.bezierCurveTo(200,180,400,280,860,230); } },
     { w:8,  p(){ ctx.moveTo(70,230); ctx.bezierCurveTo(180,120,380,340,860,230); } },
@@ -106,7 +111,7 @@ window.addEventListener("load", () => {
   function drawLevels(){
     let t="";
     for(let i=0;i<levels.length;i++){
-      t += (i<=unlockedLevel?"🟢":"🔒")+" "+(i+1)+"  ";
+      t += (i<=unlockedLevel ? "🟢" : "🔒") + " " + (i+1) + "  ";
     }
     levelsDiv.textContent = t;
   }
@@ -131,7 +136,7 @@ window.addEventListener("load", () => {
 
     // 🔵 SMALL BLUE CURSOR (ALWAYS VISIBLE)
     ctx.beginPath();
-    ctx.arc(cursor.x, cursor.y, CURSOR_RADIUS, 2, Math.PI*2);
+    ctx.arc(cursor.x, cursor.y, CURSOR_RADIUS, 0, Math.PI * 2);
     ctx.fillStyle = "#0066ff";
     ctx.fill();
 
@@ -149,9 +154,18 @@ window.addEventListener("load", () => {
     onLine = false;
     gameOver = false;
     levelCompleted = false;
+
     distancePx = 0;
     elapsedTime = 0;
     timerRunning = false;
+
+    // 🔵 RESET CURSOR TO START (VISIBLE AFTER RESTART)
+    cursor = {
+      x: START.x + START.w / 2,
+      y: START.y + START.h / 2
+    };
+    lastCursor = { ...cursor };
+
     draw();
   }
 
@@ -202,7 +216,7 @@ window.addEventListener("load", () => {
       lastCursor = { ...cursor };
     }
 
-    // END — HARD LOCK (NO SKIP POSSIBLE)
+    // END — HARD LOCK
     if(
       cursor.x > END.x && cursor.x < END.x + END.w &&
       cursor.y > END.y && cursor.y < END.y + END.h
@@ -213,7 +227,7 @@ window.addEventListener("load", () => {
       successSound.play();
 
       setTimeout(()=>{
-        level = level + 1;
+        level++;
         if(level >= levels.length){
           level = 0;
           unlockedLevel = 0;
@@ -228,14 +242,16 @@ window.addEventListener("load", () => {
   }
 
   /* ========= INPUT ========= */
-  const pos = e=>{
+  const pos = e => {
     const r = canvas.getBoundingClientRect();
-    return { x:e.clientX-r.left, y:e.clientY-r.top };
+    return { x:e.clientX - r.left, y:e.clientY - r.top };
   };
 
   canvas.addEventListener("mousedown",e=>{
-    cursor = pos(e); lastCursor={...cursor};
-    if(cursor.x>START.x&&cursor.x<START.x+START.w&&cursor.y>START.y&&cursor.y<START.y+START.h)
+    cursor = pos(e);
+    lastCursor = { ...cursor };
+    if(cursor.x>START.x && cursor.x<START.x+START.w &&
+       cursor.y>START.y && cursor.y<START.y+START.h)
       startGame();
   });
 
@@ -244,12 +260,16 @@ window.addEventListener("load", () => {
     handleMove();
   });
 
-  canvas.addEventListener("mouseup",()=>{ if(started) lose(); });
+  canvas.addEventListener("mouseup",()=>{
+    if(started) lose();
+  });
 
   canvas.addEventListener("touchstart",e=>{
     e.preventDefault();
-    cursor = pos(e.touches[0]); lastCursor={...cursor};
-    if(cursor.x>START.x&&cursor.x<START.x+START.w&&cursor.y>START.y&&cursor.y<START.y+START.h)
+    cursor = pos(e.touches[0]);
+    lastCursor = { ...cursor };
+    if(cursor.x>START.x && cursor.x<START.x+START.w &&
+       cursor.y>START.y && cursor.y<START.y+START.h)
       startGame();
   });
 
