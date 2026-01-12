@@ -10,8 +10,8 @@ const statsDiv = document.getElementById("stats");
 const levelsDiv = document.getElementById("levels");
 
 /* ================= STATE ================= */
-let level = 0;
-let unlockedLevel = Number(localStorage.getItem("unlockedLevel")) || 0;
+let level = 0;          // current level
+let unlockedLevel = 0;  // resets on page reload
 
 let holding=false, started=false, onLine=false, gameOver=false;
 let cursor={x:0,y:0}, lastCursor={x:0,y:0};
@@ -36,11 +36,18 @@ const levels = [
   { w:7,  p(){ctx.moveTo(70,230);ctx.bezierCurveTo(180,120,380,340,860,230);} },
   { w:6.5,p(){ctx.moveTo(70,230);ctx.bezierCurveTo(160,60,360,400,860,230);} },
   { w:6,  p(){ctx.moveTo(70,200);ctx.bezierCurveTo(200,420,420,40,860,230);} },
-  { w:5.5,p(){ctx.moveTo(70,230);ctx.bezierCurveTo(150,80,300,380,500,120);ctx.bezierCurveTo(650,-20,750,360,860,230);} },
-  { w:5,  p(){ctx.moveTo(70,230);ctx.bezierCurveTo(150,20,280,420,420,180);ctx.bezierCurveTo(560,-40,700,420,860,230);} },
-  { w:4.5,p(){ctx.moveTo(70,200);ctx.bezierCurveTo(140,400,260,40,400,300);ctx.bezierCurveTo(540,520,700,-80,860,230);} },
-  { w:4,  p(){ctx.moveTo(70,230);ctx.bezierCurveTo(120,20,240,420,360,120);ctx.bezierCurveTo(480,-80,600,520,720,180);ctx.bezierCurveTo(780,60,820,300,860,230);} },
-  { w:3.5,p(){ctx.moveTo(70,230);ctx.bezierCurveTo(120,0,220,460,340,140);ctx.bezierCurveTo(460,-120,580,560,700,160);ctx.bezierCurveTo(760,40,820,340,860,230);} }
+  { w:5.5,p(){ctx.moveTo(70,230);ctx.bezierCurveTo(150,80,300,380,500,120);
+               ctx.bezierCurveTo(650,-20,750,360,860,230);} },
+  { w:5,  p(){ctx.moveTo(70,230);ctx.bezierCurveTo(150,20,280,420,420,180);
+               ctx.bezierCurveTo(560,-40,700,420,860,230);} },
+  { w:4.5,p(){ctx.moveTo(70,200);ctx.bezierCurveTo(140,400,260,40,400,300);
+               ctx.bezierCurveTo(540,520,700,-80,860,230);} },
+  { w:4,  p(){ctx.moveTo(70,230);ctx.bezierCurveTo(120,20,240,420,360,120);
+               ctx.bezierCurveTo(480,-80,600,520,720,180);
+               ctx.bezierCurveTo(780,60,820,300,860,230);} },
+  { w:3.5,p(){ctx.moveTo(70,230);ctx.bezierCurveTo(120,0,220,460,340,140);
+               ctx.bezierCurveTo(460,-120,580,560,700,160);
+               ctx.bezierCurveTo(760,40,820,340,860,230);} }
 ];
 
 /* ================= DRAW ================= */
@@ -55,7 +62,7 @@ function drawPath(){
 function drawLevels(){
   let txt="";
   for(let i=0;i<levels.length;i++){
-    txt += (i<=unlockedLevel?"🟢":"🔒")+" "+(i+1)+"  ";
+    txt += (i<=unlockedLevel ? "🟢" : "🔒") + " " + (i+1) + "  ";
   }
   levelsDiv.textContent = txt;
 }
@@ -153,16 +160,14 @@ function handleMove(){
   if(inBox(cursor,END)){
     successSound.play();
     setTimeout(()=>{
-      if(level === unlockedLevel){
-        unlockedLevel++;
-        localStorage.setItem("unlockedLevel", unlockedLevel);
-      }
+      if(level === unlockedLevel) unlockedLevel++;
       if(level < levels.length-1){
         alert(`✔ Level ${level+1} Complete`);
         level++;
       }else{
         alert("🏆 MASTER LEVEL CLEARED!");
         level = 0;
+        unlockedLevel = 0;
       }
       resetGame();
     },300);
