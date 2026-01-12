@@ -205,20 +205,29 @@ function handleMove() {
   lastCursor = { ...cursor };
 
   if (inBox(cursor, END)) {
-    successSound.play();
-    setTimeout(() => {
-      if (level === unlockedLevel) unlockedLevel++;
-      if (level < levels.length - 1) {
-        level++;
-      } else {
-        level = 0;
-        unlockedLevel = 0;
-      }
-      resetGame();
-    }, 300);
-  }
+  successSound.play();
 
-  draw();
+  setTimeout(() => {
+
+    // If NOT last level → go to next level
+    if (level < levels.length - 1) {
+      level = level + 1;
+
+      // unlock ONLY the next level
+      if (level > unlockedLevel) {
+        unlockedLevel = level;
+      }
+
+    } 
+    // If MASTER level completed
+    else {
+      alert("🏆 MASTER LEVEL CLEARED!");
+      level = 0;
+      unlockedLevel = 0;
+    }
+
+    resetGame();
+  }, 300);
 }
 
 /* ================= INPUT ================= */
