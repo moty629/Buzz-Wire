@@ -15,14 +15,14 @@ window.addEventListener("load", () => {
   let level = 0;
   let unlockedLevel = 0;
 
-  let holding = false;
   let started = false;
+  let holding = false;
   let onLine = false;
   let gameOver = false;
-  let levelCompleted = false;   // 🔒 HARD LOCK
+  let levelCompleted = false;
 
-  let cursor = { x:0, y:0 };
-  let lastCursor = { x:0, y:0 };
+  let cursor = { x: 0, y: 0 };
+  let lastCursor = { x: 0, y: 0 };
 
   let distancePx = 0;
 
@@ -33,10 +33,11 @@ window.addEventListener("load", () => {
 
   /* ========= CONSTANTS ========= */
   const PX_PER_METER = 100;
-  const START = { x:40, y:210, w:35, h:35 };
-  const END   = { x:830, y:205, w:40, h:40 };
+  const CURSOR_RADIUS = 2;          // 🔵 SMALL BLUE CURSOR
+  const START = { x: 40,  y: 210, w: 35, h: 35 };
+  const END   = { x: 830, y: 205, w: 40, h: 40 };
 
-  /* ========= RESET CANVAS ========= */
+  /* ========= CANVAS RESET ========= */
   function resetCanvas(){
     ctx.setTransform(1,0,0,1,0,0);
     ctx.font = "14px Arial";
@@ -59,22 +60,44 @@ window.addEventListener("load", () => {
 
   /* ========= LEVEL PATHS ========= */
   const levels = [
-    { w:14, p(){ ctx.moveTo(70,230); ctx.lineTo(860,230); } }, // 1
-    { w:10, p(){ ctx.moveTo(70,230); ctx.bezierCurveTo(250,230,500,230,860,230); } }, // 2
-    { w:9,  p(){ ctx.moveTo(70,230); ctx.bezierCurveTo(200,180,400,280,860,230); } }, // 3
-    { w:8,  p(){ ctx.moveTo(70,230); ctx.bezierCurveTo(180,120,380,340,860,230); } }, // 4
-    { w:7,  p(){ ctx.moveTo(70,200); ctx.bezierCurveTo(200,420,420,40,860,230); } }, // 5
-    { w:6,  p(){ ctx.moveTo(70,230); ctx.bezierCurveTo(150,80,300,380,500,120); ctx.bezierCurveTo(650,-20,750,360,860,230); } },
-    { w:5.5,p(){ ctx.moveTo(70,230); ctx.bezierCurveTo(150,20,280,420,420,180); ctx.bezierCurveTo(560,-40,700,420,860,230); } },
-    { w:5,  p(){ ctx.moveTo(70,200); ctx.bezierCurveTo(140,400,260,40,400,300); ctx.bezierCurveTo(540,520,700,-80,860,230); } },
-    { w:4.5,p(){ ctx.moveTo(70,230); ctx.bezierCurveTo(120,20,240,420,360,120); ctx.bezierCurveTo(480,-80,600,520,720,180); ctx.bezierCurveTo(780,60,820,300,860,230); } },
-    { w:4,  p(){ ctx.moveTo(70,230); ctx.bezierCurveTo(120,0,220,460,340,140); ctx.bezierCurveTo(460,-120,580,560,700,160); ctx.bezierCurveTo(760,40,820,340,860,230); } }
+    { w:14, p(){ ctx.moveTo(70,230); ctx.lineTo(860,230); } }, // 1 VERY EASY
+    { w:10, p(){ ctx.moveTo(70,230); ctx.bezierCurveTo(250,230,500,230,860,230); } },
+    { w:9,  p(){ ctx.moveTo(70,230); ctx.bezierCurveTo(200,180,400,280,860,230); } },
+    { w:8,  p(){ ctx.moveTo(70,230); ctx.bezierCurveTo(180,120,380,340,860,230); } },
+    { w:7,  p(){ ctx.moveTo(70,200); ctx.bezierCurveTo(200,420,420,40,860,230); } },
+    { w:6,  p(){
+        ctx.moveTo(70,230);
+        ctx.bezierCurveTo(150,80,300,380,500,120);
+        ctx.bezierCurveTo(650,-20,750,360,860,230);
+      }},
+    { w:5.5,p(){
+        ctx.moveTo(70,230);
+        ctx.bezierCurveTo(150,20,280,420,420,180);
+        ctx.bezierCurveTo(560,-40,700,420,860,230);
+      }},
+    { w:5,  p(){
+        ctx.moveTo(70,200);
+        ctx.bezierCurveTo(140,400,260,40,400,300);
+        ctx.bezierCurveTo(540,520,700,-80,860,230);
+      }},
+    { w:4.5,p(){
+        ctx.moveTo(70,230);
+        ctx.bezierCurveTo(120,20,240,420,360,120);
+        ctx.bezierCurveTo(480,-80,600,520,720,180);
+        ctx.bezierCurveTo(780,60,820,300,860,230);
+      }},
+    { w:4,  p(){
+        ctx.moveTo(70,230);
+        ctx.bezierCurveTo(120,0,220,460,340,140);
+        ctx.bezierCurveTo(460,-120,580,560,700,160);
+        ctx.bezierCurveTo(760,40,820,340,860,230);
+      }}
   ];
 
   /* ========= DRAW ========= */
   function drawPath(){
     ctx.beginPath();
-    ctx.strokeStyle="lime";
+    ctx.strokeStyle = "lime";
     ctx.lineWidth = levels[level].w;
     levels[level].p();
     ctx.stroke();
@@ -83,7 +106,7 @@ window.addEventListener("load", () => {
   function drawLevels(){
     let t="";
     for(let i=0;i<levels.length;i++){
-      t+=(i<=unlockedLevel?"🟢":"🔒")+" "+(i+1)+"  ";
+      t += (i<=unlockedLevel?"🟢":"🔒")+" "+(i+1)+"  ";
     }
     levelsDiv.textContent = t;
   }
@@ -95,16 +118,24 @@ window.addEventListener("load", () => {
     drawLevels();
     drawPath();
 
+    // START
     ctx.fillStyle="blue";
     ctx.fillRect(START.x,START.y,START.w,START.h);
     ctx.fillStyle="white";
     ctx.fillText("START",START.x-2,START.y+START.h+14);
 
+    // END
     ctx.fillStyle="red";
     ctx.fillRect(END.x,END.y,END.w,END.h);
     ctx.fillText("END",END.x+8,END.y-8);
 
-    const meters = (distancePx / PX_PER_METER).toFixed(2);
+    // 🔵 SMALL BLUE CURSOR (ALWAYS VISIBLE)
+    ctx.beginPath();
+    ctx.arc(cursor.x, cursor.y, CURSOR_RADIUS, 0, Math.PI*2);
+    ctx.fillStyle = "#0066ff";
+    ctx.fill();
+
+    const meters  = (distancePx / PX_PER_METER).toFixed(2);
     const seconds = (getTimeMs() / 1000).toFixed(2);
 
     statsDiv.textContent =
@@ -113,11 +144,11 @@ window.addEventListener("load", () => {
 
   /* ========= GAME ========= */
   function resetGame(){
-    holding = false;
     started = false;
+    holding = false;
     onLine = false;
     gameOver = false;
-    levelCompleted = false;   // 🔓 UNLOCK
+    levelCompleted = false;
     distancePx = 0;
     elapsedTime = 0;
     timerRunning = false;
@@ -127,8 +158,8 @@ window.addEventListener("load", () => {
   function startGame(){
     if(level > unlockedLevel) return;
 
-    holding = true;
     started = true;
+    holding = true;
     onLine = false;
     gameOver = false;
     levelCompleted = false;
@@ -171,13 +202,13 @@ window.addEventListener("load", () => {
       lastCursor = { ...cursor };
     }
 
-    // ✅ END — HARD LOCK
+    // END — HARD LOCK (NO SKIP POSSIBLE)
     if(
       cursor.x > END.x && cursor.x < END.x + END.w &&
       cursor.y > END.y && cursor.y < END.y + END.h
     ){
       levelCompleted = true;
-      started = false;     // 🔥 KILL MOVEMENT
+      started = false;
       stopTimer();
       successSound.play();
 
@@ -186,7 +217,7 @@ window.addEventListener("load", () => {
         if(level >= levels.length){
           level = 0;
           unlockedLevel = 0;
-        }else{
+        } else {
           unlockedLevel = level;
         }
         resetGame();
@@ -198,18 +229,18 @@ window.addEventListener("load", () => {
 
   /* ========= INPUT ========= */
   const pos = e=>{
-    const r=canvas.getBoundingClientRect();
-    return {x:e.clientX-r.left,y:e.clientY-r.top};
+    const r = canvas.getBoundingClientRect();
+    return { x:e.clientX-r.left, y:e.clientY-r.top };
   };
 
   canvas.addEventListener("mousedown",e=>{
-    cursor=pos(e); lastCursor={...cursor};
+    cursor = pos(e); lastCursor={...cursor};
     if(cursor.x>START.x&&cursor.x<START.x+START.w&&cursor.y>START.y&&cursor.y<START.y+START.h)
       startGame();
   });
 
   canvas.addEventListener("mousemove",e=>{
-    cursor=pos(e);
+    cursor = pos(e);
     handleMove();
   });
 
@@ -217,14 +248,14 @@ window.addEventListener("load", () => {
 
   canvas.addEventListener("touchstart",e=>{
     e.preventDefault();
-    cursor=pos(e.touches[0]); lastCursor={...cursor};
+    cursor = pos(e.touches[0]); lastCursor={...cursor};
     if(cursor.x>START.x&&cursor.x<START.x+START.w&&cursor.y>START.y&&cursor.y<START.y+START.h)
       startGame();
   });
 
   canvas.addEventListener("touchmove",e=>{
     e.preventDefault();
-    cursor=pos(e.touches[0]);
+    cursor = pos(e.touches[0]);
     handleMove();
   });
 
