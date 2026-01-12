@@ -12,8 +12,8 @@ window.addEventListener("load", () => {
   const levelsDiv = document.getElementById("levels");
 
   /* ========= STATE ========= */
-  let level = 0;            // current level index (0 = level 1)
-  let unlockedLevel = 0;    // highest unlocked level
+  let level = 0;          // current level
+  let unlockedLevel = 0;  // highest unlocked
 
   let started = false;
   let onLine = false;
@@ -35,7 +35,7 @@ window.addEventListener("load", () => {
   const START = { x:40, y:210, w:35, h:35 };
   const END   = { x:830, y:205, w:40, h:40 };
 
-  /* ========= SEPARATE LEVEL DEFINITIONS ========= */
+  /* ========= LEVELS (SEPARATE & SAFE) ========= */
   const levels = [
     { width:14, draw(){ ctx.moveTo(70,230); ctx.lineTo(860,230); } }, // 1
     { width:12, draw(){ ctx.moveTo(70,230); ctx.bezierCurveTo(250,200,500,260,860,230); } }, // 2
@@ -61,7 +61,6 @@ window.addEventListener("load", () => {
   function resetCanvas(){
     ctx.setTransform(1,0,0,1,0,0);
     ctx.font = "14px Arial";
-    ctx.lineWidth = 1;
   }
 
   function getTimeMs(){
@@ -77,12 +76,12 @@ window.addEventListener("load", () => {
     }
   }
 
-  /* ========= UNLOCK LOGIC ========= */
+  /* ========= UNLOCK ========= */
   function unlockNextLevel(){
     if (unlockedLevel === level && level < levels.length - 1) {
-      unlockedLevel++;           // unlock ONLY next level
+      unlockedLevel++;
     }
-    resetGame();                 // stay on same level
+    resetGame();
   }
 
   /* ========= DRAW ========= */
@@ -102,6 +101,13 @@ window.addEventListener("load", () => {
     levelsDiv.textContent = txt;
   }
 
+  function drawCursor(){
+    ctx.fillStyle = "yellow";
+    ctx.beginPath();
+    ctx.arc(cursor.x, cursor.y, 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
   function draw(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
     resetCanvas();
@@ -117,11 +123,13 @@ window.addEventListener("load", () => {
     ctx.fillRect(END.x,END.y,END.w,END.h);
     ctx.fillText("END",END.x+8,END.y-8);
 
+    drawCursor(); // 👈 CURSOR ALWAYS VISIBLE
+
     statsDiv.textContent =
       `Level ${level+1}/10 | Time ${(getTimeMs()/1000).toFixed(2)}s | Distance ${(distancePx/PX_PER_METER).toFixed(2)} m`;
   }
 
-  /* ========= GAME CONTROL ========= */
+  /* ========= GAME ========= */
   function resetGame(){
     started = false;
     onLine = false;
