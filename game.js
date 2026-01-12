@@ -7,15 +7,9 @@ window.addEventListener("load", () => {
 
   /* ================= DOM ================= */
   const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
   const statsDiv = document.getElementById("stats");
   const levelsDiv = document.getElementById("levels");
-
-  if (!canvas || !statsDiv || !levelsDiv) {
-    console.error("Required DOM elements not found");
-    return;
-  }
-
-  const ctx = canvas.getContext("2d");
 
   /* ================= STATE ================= */
   let level = 0;
@@ -26,9 +20,7 @@ window.addEventListener("load", () => {
   let distance=0;
 
   /* ================= TIMER ================= */
-  let startTime = 0;
-  let elapsedTime = 0;
-  let timerRunning = false;
+  let startTime=0, elapsedTime=0, timerRunning=false;
 
   /* ================= CONSTANTS ================= */
   const START={x:40,y:210,w:35,h:35};
@@ -36,22 +28,22 @@ window.addEventListener("load", () => {
   const CURSOR_RADIUS=2;
 
   /* ================= CANVAS RESET ================= */
-  function resetCanvasState(){
+  function resetCanvas(){
     ctx.setTransform(1,0,0,1,0,0);
     ctx.lineWidth=1;
     ctx.font="14px Arial";
     ctx.textAlign="left";
-    ctx.textBaseline="alphabetic";
   }
 
   /* ================= TIME ================= */
   function getTime(){
-    if(!timerRunning) return elapsedTime;
-    return elapsedTime + (performance.now() - startTime);
+    return timerRunning
+      ? elapsedTime + (performance.now() - startTime)
+      : elapsedTime;
   }
 
   /* ================= DIFFICULTY ================= */
-  function getDifficulty(lv){
+  function difficulty(lv){
     if(lv<=2) return "EASY";
     if(lv<=5) return "MEDIUM";
     if(lv<=8) return "HARD";
@@ -59,44 +51,39 @@ window.addEventListener("load", () => {
   }
 
   /* ================= LEVELS ================= */
-  const levels = [
-    { w:14, p(){ ctx.moveTo(70,230); ctx.lineTo(860,230); } },
-    { w:10, p(){ ctx.moveTo(70,230); ctx.bezierCurveTo(250,230,500,230,860,230); } },
-    { w:9,  p(){ ctx.moveTo(70,230); ctx.bezierCurveTo(200,180,400,280,860,230); } },
-    { w:8,  p(){ ctx.moveTo(70,230); ctx.bezierCurveTo(180,120,380,340,860,230); } },
-    { w:7,  p(){ ctx.moveTo(70,200); ctx.bezierCurveTo(200,420,420,40,860,230); } },
-    { w:6,  p(){
-        ctx.moveTo(70,230);
-        ctx.bezierCurveTo(150,80,300,380,500,120);
-        ctx.bezierCurveTo(650,-20,750,360,860,230);
-      }
-    },
-    { w:5.5,p(){
-        ctx.moveTo(70,230);
-        ctx.bezierCurveTo(150,20,280,420,420,180);
-        ctx.bezierCurveTo(560,-40,700,420,860,230);
-      }
-    },
-    { w:5,  p(){
-        ctx.moveTo(70,200);
-        ctx.bezierCurveTo(140,400,260,40,400,300);
-        ctx.bezierCurveTo(540,520,700,-80,860,230);
-      }
-    },
-    { w:4.5,p(){
-        ctx.moveTo(70,230);
-        ctx.bezierCurveTo(120,20,240,420,360,120);
-        ctx.bezierCurveTo(480,-80,600,520,720,180);
-        ctx.bezierCurveTo(780,60,820,300,860,230);
-      }
-    },
-    { w:4,  p(){
-        ctx.moveTo(70,230);
-        ctx.bezierCurveTo(120,0,220,460,340,140);
-        ctx.bezierCurveTo(460,-120,580,560,700,160);
-        ctx.bezierCurveTo(760,40,820,340,860,230);
-      }
-    }
+  const levels=[
+    {w:14,p(){ctx.moveTo(70,230);ctx.lineTo(860,230);}},
+    {w:10,p(){ctx.moveTo(70,230);ctx.bezierCurveTo(250,230,500,230,860,230);}},
+    {w:9,p(){ctx.moveTo(70,230);ctx.bezierCurveTo(200,180,400,280,860,230);}},
+    {w:8,p(){ctx.moveTo(70,230);ctx.bezierCurveTo(180,120,380,340,860,230);}},
+    {w:7,p(){ctx.moveTo(70,200);ctx.bezierCurveTo(200,420,420,40,860,230);}},
+    {w:6,p(){
+      ctx.moveTo(70,230);
+      ctx.bezierCurveTo(150,80,300,380,500,120);
+      ctx.bezierCurveTo(650,-20,750,360,860,230);
+    }},
+    {w:5.5,p(){
+      ctx.moveTo(70,230);
+      ctx.bezierCurveTo(150,20,280,420,420,180);
+      ctx.bezierCurveTo(560,-40,700,420,860,230);
+    }},
+    {w:5,p(){
+      ctx.moveTo(70,200);
+      ctx.bezierCurveTo(140,400,260,40,400,300);
+      ctx.bezierCurveTo(540,520,700,-80,860,230);
+    }},
+    {w:4.5,p(){
+      ctx.moveTo(70,230);
+      ctx.bezierCurveTo(120,20,240,420,360,120);
+      ctx.bezierCurveTo(480,-80,600,520,720,180);
+      ctx.bezierCurveTo(780,60,820,300,860,230);
+    }},
+    {w:4,p(){
+      ctx.moveTo(70,230);
+      ctx.bezierCurveTo(120,0,220,460,340,140);
+      ctx.bezierCurveTo(460,-120,580,560,700,160);
+      ctx.bezierCurveTo(760,40,820,340,860,230);
+    }}
   ];
 
   /* ================= DRAW ================= */
@@ -109,16 +96,16 @@ window.addEventListener("load", () => {
   }
 
   function drawLevels(){
-    let txt="";
+    let t="";
     for(let i=0;i<levels.length;i++){
-      txt += (i<=unlockedLevel?"🟢":"🔒")+" "+(i+1)+"  ";
+      t+=(i<=unlockedLevel?"🟢":"🔒")+" "+(i+1)+"  ";
     }
-    levelsDiv.textContent = txt;
+    levelsDiv.textContent=t;
   }
 
   function draw(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
-    resetCanvasState();
+    resetCanvas();
 
     drawLevels();
     drawPath();
@@ -145,34 +132,13 @@ window.addEventListener("load", () => {
       ctx.restore();
     }
 
-    statsDiv.textContent =
-      `Level ${level+1}/10 | ${getDifficulty(level)} | ` +
-      `Time ${(getTime()/1000).toFixed(2)}s | Distance ${Math.round(distance)} px`;
-  }
-
-  /* ================= HELPERS ================= */
-  function getPos(e){
-    const r=canvas.getBoundingClientRect();
-    return {x:e.clientX-r.left,y:e.clientY-r.top};
-  }
-  function getTouchPos(t){
-    const r=canvas.getBoundingClientRect();
-    return {x:t.clientX-r.left,y:t.clientY-r.top};
-  }
-  function inBox(p,b){
-    return p.x>b.x&&p.x<b.x+b.w&&p.y>b.y&&p.y<b.y+b.h;
+    statsDiv.textContent=
+      `Level ${level+1}/10 | ${difficulty(level)} | `+
+      `Time ${(getTime()/1000).toFixed(2)}s | `+
+      `Distance ${Math.round(distance)} px`;
   }
 
   /* ================= GAME ================= */
-  function lose(){
-    if(gameOver) return;
-    timerRunning=false;
-    elapsedTime=getTime();
-    gameOver=true;
-    failSound.play();
-    draw();
-  }
-
   function resetGame(){
     holding=false;
     started=false;
@@ -184,7 +150,16 @@ window.addEventListener("load", () => {
     draw();
   }
 
-  function startCheck(){
+  function lose(){
+    if(gameOver) return;
+    timerRunning=false;
+    elapsedTime=getTime();
+    gameOver=true;
+    failSound.play();
+    draw();
+  }
+
+  function startGame(){
     if(level>unlockedLevel) return;
     holding=true;
     started=true;
@@ -197,25 +172,20 @@ window.addEventListener("load", () => {
   }
 
   function handleMove(){
-    if(!holding||!started||gameOver){ draw(); return; }
+    if(!holding||!started||gameOver){draw();return;}
 
     drawPath();
     const inside=ctx.isPointInStroke(cursor.x,cursor.y);
 
-    if(!onLine && inside){
-      onLine=true;
-      lastCursor={...cursor};
-    }
-    if(onLine && !inside){
-      lose(); return;
-    }
+    if(!onLine&&inside){onLine=true;lastCursor={...cursor};}
+    if(onLine&&!inside){lose();return;}
 
     const dx=cursor.x-lastCursor.x;
     const dy=cursor.y-lastCursor.y;
     distance+=Math.sqrt(dx*dx+dy*dy);
     lastCursor={...cursor};
 
-    if(inBox(cursor,END)){
+    if(cursor.x>END.x&&cursor.x<END.x+END.w&&cursor.y>END.y&&cursor.y<END.y+END.h){
       timerRunning=false;
       elapsedTime=getTime();
       successSound.play();
@@ -225,41 +195,46 @@ window.addEventListener("load", () => {
           level++;
           if(level>unlockedLevel) unlockedLevel=level;
         }else{
-          level=0;
-          unlockedLevel=0;
+          level=0; unlockedLevel=0;
         }
         resetGame();
       },300);
     }
-
     draw();
   }
 
   /* ================= INPUT ================= */
+  const pos=e=>{
+    const r=canvas.getBoundingClientRect();
+    return {x:e.clientX-r.left,y:e.clientY-r.top};
+  };
+
   canvas.addEventListener("mousedown",e=>{
-    cursor=getPos(e); lastCursor={...cursor};
-    if(inBox(cursor,START)) startCheck();
+    cursor=pos(e); lastCursor={...cursor};
+    if(cursor.x>START.x&&cursor.x<START.x+START.w&&cursor.y>START.y&&cursor.y<START.y+START.h)
+      startGame();
   });
-  canvas.addEventListener("mousemove",e=>{
-    cursor=getPos(e); handleMove();
-  });
-  canvas.addEventListener("mouseup",()=>{ if(started&&!gameOver) lose(); });
+  canvas.addEventListener("mousemove",e=>{cursor=pos(e);handleMove();});
+  canvas.addEventListener("mouseup",()=>{if(started&&!gameOver)lose();});
 
   canvas.addEventListener("touchstart",e=>{
     e.preventDefault();
-    cursor=getTouchPos(e.touches[0]); lastCursor={...cursor};
-    if(inBox(cursor,START)) startCheck();
+    cursor=pos(e.touches[0]); lastCursor={...cursor};
+    if(cursor.x>START.x&&cursor.x<START.x+START.w&&cursor.y>START.y&&cursor.y<START.y+START.h)
+      startGame();
   });
   canvas.addEventListener("touchmove",e=>{
     e.preventDefault();
-    cursor=getTouchPos(e.touches[0]); handleMove();
+    cursor=pos(e.touches[0]);handleMove();
   });
   canvas.addEventListener("touchend",e=>{
     e.preventDefault();
-    if(started&&!gameOver) lose();
+    if(started&&!gameOver)lose();
   });
+
+  /* ================= EXPOSE TO HTML ================= */
+  window.resetGame = resetGame;
 
   /* ================= INIT ================= */
   draw();
-
 });
