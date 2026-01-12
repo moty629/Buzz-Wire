@@ -12,7 +12,7 @@ window.addEventListener("load", () => {
   const levelsDiv = document.getElementById("levels");
 
   /* ========= STATE ========= */
-  let level = 0;           // current playing level (0 = level 1)
+  let level = 0;           // current level being played
   let unlockedLevel = 0;   // highest unlocked level
 
   let started = false;
@@ -40,7 +40,7 @@ window.addEventListener("load", () => {
     { w:14, p(){ ctx.moveTo(70,230); ctx.lineTo(860,230); } }, // 1
     { w:10, p(){ ctx.moveTo(70,230); ctx.bezierCurveTo(250,230,500,230,860,230); } }, // 2
     { w:9,  p(){ ctx.moveTo(70,230); ctx.bezierCurveTo(200,180,400,280,860,230); } }, // 3
-    { w:8,  p(){ ctx.moveTo(70,230); ctx.bezierCurveTo(180,120,380,340,860,230); } } // 4
+    { w:8,  p(){ ctx.moveTo(70,230); ctx.bezierCurveTo(180,120,380,340,860,230); } }  // 4
   ];
 
   /* ========= UTIL ========= */
@@ -63,12 +63,13 @@ window.addEventListener("load", () => {
     }
   }
 
-  /* ========= LEVEL UNLOCK LOGIC ========= */
+  /* ========= UNLOCK LOGIC (CORRECT) ========= */
   function unlockNextLevel(){
-    if (unlockedLevel === level && unlockedLevel < levels.length - 1) {
-      unlockedLevel++;          // 🔓 unlock ONLY next level
+    // unlock ONLY next level
+    if (unlockedLevel === level && level < levels.length - 1) {
+      unlockedLevel = level + 1;
     }
-    resetGame();                // stay on same level
+    resetGame(); // stay on same level
   }
 
   /* ========= DRAW ========= */
@@ -120,7 +121,7 @@ window.addEventListener("load", () => {
   }
 
   function startGame(){
-    if(level > unlockedLevel) return; // 🔒 locked
+    if (level > unlockedLevel) return; // 🔒 LOCKED
 
     started = true;
     onLine = false;
