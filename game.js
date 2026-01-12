@@ -191,11 +191,14 @@ window.addEventListener("load", () => {
       successSound.play();
 
       setTimeout(()=>{
-        if(level<levels.length-1){
-          level++;
-          if(level>unlockedLevel) unlockedLevel=level;
-        }else{
-          level=0; unlockedLevel=0;
+        if (level < levels.length - 1) {
+          level = level + 1;
+          unlockedLevel = level;   // unlock ONLY this next level
+        } else {
+  // finished MASTER level
+          alert("🏆 MASTER LEVEL CLEARED!");
+          level = 0;
+          unlockedLevel = 0;
         }
         resetGame();
       },300);
