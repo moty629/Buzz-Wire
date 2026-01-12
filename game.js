@@ -10,8 +10,8 @@ const statsDiv = document.getElementById("stats");
 const levelsDiv = document.getElementById("levels");
 
 /* ================= STATE ================= */
-let level = 0;          // current level
-let unlockedLevel = 0;  // resets on page reload
+let level = 0;
+let unlockedLevel = 0;
 
 let holding=false, started=false, onLine=false, gameOver=false;
 let cursor={x:0,y:0}, lastCursor={x:0,y:0};
@@ -21,6 +21,13 @@ const START={x:40,y:210,w:35,h:35};
 const END  ={x:830,y:205,w:40,h:40};
 const CURSOR_RADIUS=2;
 
+/* ================= RESET CONTEXT ================= */
+function resetCtx(){
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.lineWidth = 1;
+  ctx.font = "14px Arial";
+}
+
 /* ================= DIFFICULTY ================= */
 function getDifficulty(lv){
   if(lv <= 2) return "EASY";
@@ -29,7 +36,7 @@ function getDifficulty(lv){
   return "MASTER";
 }
 
-/* ================= LEVEL DEFINITIONS ================= */
+/* ================= LEVELS ================= */
 const levels = [
   { w:9,  p(){ctx.moveTo(70,230);ctx.bezierCurveTo(300,230,500,230,860,230);} },
   { w:8,  p(){ctx.moveTo(70,230);ctx.bezierCurveTo(200,180,400,280,860,230);} },
@@ -69,30 +76,34 @@ function drawLevels(){
 
 function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
-
-  if(gameOver){
-    ctx.fillStyle="red";
-    ctx.font="48px Arial";
-    ctx.fillText("!!!!! LOOOOOSER !!!!!",200,240);
-    return;
-  }
+  resetCtx();
 
   drawLevels();
   drawPath();
 
+  // START
   ctx.fillStyle="blue";
   ctx.fillRect(START.x,START.y,START.w,START.h);
   ctx.fillStyle="white";
-  ctx.fillText("START",START.x-2,START.y+50);
+  ctx.fillText("START", START.x-2, START.y+START.h+14);
 
+  // END
   ctx.fillStyle="red";
   ctx.fillRect(END.x,END.y,END.w,END.h);
-  ctx.fillText("END",END.x+10,END.y-10);
+  ctx.fillText("END", END.x+8, END.y-8);
 
+  // Cursor
   ctx.beginPath();
   ctx.arc(cursor.x,cursor.y,CURSOR_RADIUS,0,Math.PI*2);
   ctx.fillStyle="#007bff";
   ctx.fill();
+
+  // Game over text (does NOT block redraw)
+  if(gameOver){
+    ctx.fillStyle="red";
+    ctx.font="48px Arial";
+    ctx.fillText("!!!!! LOOOOOSER !!!!!",200,240);
+  }
 
   statsDiv.textContent =
     `Level ${level+1}/10 | ${getDifficulty(level)} | Distance ${Math.round(distance)} px`;
@@ -113,7 +124,9 @@ function inBox(p,b){
 
 /* ================= GAME ================= */
 function lose(){
+  if(gameOver) return;
   gameOver=true;
+  failSound.currentTime=0;
   failSound.play();
   draw();
 }
@@ -128,19 +141,21 @@ function resetGame(){
 }
 
 function startCheck(){
-  if(level > unlockedLevel) return;
+  if(level>unlockedLevel) return;
   holding=true;
   started=true;
   onLine=false;
   distance=0;
+  startSound.currentTime=0;
   startSound.play();
 }
 
+/* ================= MOVE ================= */
 function handleMove(){
-  if(!holding || gameOver || !started){ draw(); return; }
+  if(!holding||!started||gameOver){ draw(); return; }
 
   drawPath();
-  const inside = ctx.isPointInStroke(cursor.x,cursor.y);
+  const inside=ctx.isPointInStroke(cursor.x,cursor.y);
 
   if(!onLine && inside){
     onLine=true;
@@ -150,24 +165,20 @@ function handleMove(){
     lose(); return;
   }
 
-  if(onLine){
-    const dx=cursor.x-lastCursor.x;
-    const dy=cursor.y-lastCursor.y;
-    distance+=Math.sqrt(dx*dx+dy*dy);
-    lastCursor={...cursor};
-  }
+  const dx=cursor.x-lastCursor.x;
+  const dy=cursor.y-lastCursor.y;
+  distance+=Math.sqrt(dx*dx+dy*dy);
+  lastCursor={...cursor};
 
   if(inBox(cursor,END)){
     successSound.play();
     setTimeout(()=>{
-      if(level === unlockedLevel) unlockedLevel++;
-      if(level < levels.length-1){
-        alert(`✔ Level ${level+1} Complete`);
+      if(level===unlockedLevel) unlockedLevel++;
+      if(level<levels.length-1){
         level++;
       }else{
-        alert("🏆 MASTER LEVEL CLEARED!");
-        level = 0;
-        unlockedLevel = 0;
+        level=0;
+        unlockedLevel=0;
       }
       resetGame();
     },300);
@@ -187,9 +198,7 @@ canvas.addEventListener("mousemove",e=>{
   cursor=getPos(e);
   handleMove();
 });
-canvas.addEventListener("mouseup",()=>{
-  if(started && !gameOver) lose();
-});
+canvas.addEventListener("mouseup",()=>{ if(started&&!gameOver) lose(); });
 
 /* touch */
 canvas.addEventListener("touchstart",e=>{
@@ -205,7 +214,7 @@ canvas.addEventListener("touchmove",e=>{
 });
 canvas.addEventListener("touchend",e=>{
   e.preventDefault();
-  if(started && !gameOver) lose();
+  if(started&&!gameOver) lose();
 });
 
 /* ================= INIT ================= */
