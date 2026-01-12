@@ -1,225 +1,50 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Wire Loop – Distance Only</title>
+<title>Buzz Wire Game</title>
 
 <style>
   body {
     background:#111;
-    color:white;
-    font-family:Arial;
+    color:#fff;
+    font-family: Arial, sans-serif;
     text-align:center;
+    margin:0;
   }
   canvas {
-    background:black;
+    background:#000;
     border:2px solid #555;
     cursor:none;
-  }
-  button {
-    margin-top:10px;
-    padding:8px 16px;
-    font-size:16px;
+    touch-action:none;
   }
   #stats {
-    font-size:20px;
-    margin:8px 0;
     color:#00ffcc;
+    font-size:20px;
+    margin:10px;
+  }
+  button {
+    padding:8px 16px;
+    font-size:16px;
+    margin-top:10px;
   }
 </style>
 </head>
 
 <body>
 
-<h2>Buzz Wire</h2>
+<h2>Buzz Wire Game</h2>
 <div id="stats">Distance: 0 px</div>
 
 <canvas id="game" width="900" height="450"></canvas><br>
 <button onclick="resetGame()">RESTART</button>
 
-<script>
-/* ================= AUDIO ================= */
-const startSound   = new Audio("start.mp3");
-const failSound    = new Audio("fail.mp3");
-const successSound = new Audio("success.mp3");
+<!-- ONLY THIS SCRIPT IS VISIBLE -->
+<script src="game.js"></script>
 
-startSound.volume = 0.6;
-failSound.volume = 0.8;
-successSound.volume = 0.7;
-
-/* ================= GAME ================= */
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
-const statsDiv = document.getElementById("stats");
-
-let holding=false, started=false, onLine=false;
-let gameOver=false;
-
-let cursor={x:0,y:0};
-let lastCursor={x:0,y:0};
-let distance=0;
-
-const CURSOR_RADIUS=2;
-
-const START={x:40,y:210,w:35,h:35};
-const END  ={x:830,y:205,w:40,h:40};
-
-function resetCanvasState(){
-  ctx.setTransform(1,0,0,1,0,0);
-  ctx.font="14px Arial";
-  ctx.lineWidth=1;
-}
-
-function drawPath(){
-  ctx.beginPath();
-  ctx.moveTo(70,230);
-  ctx.bezierCurveTo(150,40, 280,420, 380,120);
-  ctx.bezierCurveTo(480,-80, 580,520, 680,220);
-  ctx.bezierCurveTo(750,80, 810,360, 860,230);
-  ctx.lineWidth=7;
-  ctx.strokeStyle="lime";
-  ctx.stroke();
-}
-
-function drawCursor(){
-  ctx.beginPath();
-  ctx.arc(cursor.x,cursor.y,CURSOR_RADIUS,0,Math.PI*2);
-  ctx.fillStyle="#007bff";
-  ctx.fill();
-}
-
-function updateStats(){
-  statsDiv.textContent = `Distance: ${Math.round(distance)}`;
-}
-
-function draw(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  resetCanvasState();
-
-  if(gameOver){
-    ctx.fillStyle="red";
-    ctx.font="48px Arial";
-    ctx.fillText("!!!!! LOOOOOSER !!!!!", 200, 240);
-    return;
-  }
-
-  drawPath();
-
-  // START
-  ctx.fillStyle="blue";
-  ctx.fillRect(START.x,START.y,START.w,START.h);
-  ctx.fillStyle="white";
-  ctx.fillText("START", START.x-2, START.y+START.h+15);
-
-  // END
-  ctx.fillStyle="red";
-  ctx.fillRect(END.x,END.y,END.w,END.h);
-  ctx.fillText("END", END.x+8, END.y-8);
-
-  drawCursor();
-  updateStats();
-}
-
-/* ================= EVENTS ================= */
-canvas.addEventListener("mousedown",e=>{
-  if(gameOver) return;
-
-  cursor=getPos(e);
-  lastCursor={...cursor};
-
-  if(inBox(cursor,START)){
-    holding=true;
-    started=true;
-    onLine=false;
-    distance=0;
-
-    startSound.currentTime=0;
-    startSound.play();
-  }
-  draw();
-});
-
-canvas.addEventListener("mousemove",e=>{
-  cursor=getPos(e);
-
-  if(!holding || gameOver || !started){
-    draw();
-    return;
-  }
-
-  drawPath();
-  const inside=ctx.isPointInStroke(cursor.x,cursor.y);
-
-  if(!onLine){
-    if(inside){
-      onLine=true;
-      lastCursor={...cursor};
-    }
-    draw();
-    return;
-  }
-
-  if(!inside){
-    lose();
-    return;
-  }
-
-  const dx=cursor.x-lastCursor.x;
-  const dy=cursor.y-lastCursor.y;
-  distance+=Math.sqrt(dx*dx+dy*dy);
-  lastCursor={...cursor};
-
-  if(inBox(cursor,END)){
-    successSound.currentTime=0;
-    successSound.play();
-
-    setTimeout(()=>{
-      alert(`SUCCESS\nDistance: ${Math.round(distance)} px`);
-      resetGame();
-    },300);
-  }
-
-  draw();
-});
-
-canvas.addEventListener("mouseup",()=>{
-  if(started && !gameOver) lose();
-});
-
-/* ================= LOGIC ================= */
-function lose(){
-  if(gameOver) return;
-
-  failSound.currentTime=0;
-  failSound.play();
-
-  gameOver=true;
-  holding=false;
-  started=false;
-  draw();
-}
-
-function resetGame(){
-  holding=false;
-  started=false;
-  onLine=false;
-  gameOver=false;
-  distance=0;
-  statsDiv.textContent="Distance: 0 px";
-  draw();
-}
-
-function getPos(e){
-  const r=canvas.getBoundingClientRect();
-  return {x:e.clientX-r.left,y:e.clientY-r.top};
-}
-
-function inBox(p,b){
-  return p.x>b.x&&p.x<b.x+b.w&&p.y>b.y&&p.y<b.y+b.h;
-}
-
-draw();
-</script>
-
+<!--
+© 2026 moty.
+Unauthorized copying or reuse is prohibited.
+-->
 </body>
 </html>
