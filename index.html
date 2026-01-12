@@ -11,22 +11,37 @@
     font-family: Arial, sans-serif;
     text-align:center;
     margin:0;
+    padding:0;
   }
+
+  h2 {
+    margin-top:12px;
+  }
+
+  #levels {
+    margin:10px;
+    font-size:18px;
+    user-select:none;
+  }
+
+  #stats {
+    color:#00ffcc;
+    font-size:18px;
+    margin-bottom:8px;
+  }
+
   canvas {
     background:#000;
     border:2px solid #555;
     cursor:none;
-    touch-action:none;
+    touch-action:none; /* important for mobile */
   }
-  #stats {
-    color:#00ffcc;
-    font-size:20px;
-    margin:10px;
-  }
+
   button {
+    margin-top:10px;
     padding:8px 16px;
     font-size:16px;
-    margin-top:10px;
+    cursor:pointer;
   }
 </style>
 </head>
@@ -34,17 +49,20 @@
 <body>
 
 <h2>Buzz Wire Game</h2>
-<div id="stats">Distance: 0 px</div>
 
-<canvas id="game" width="900" height="450"></canvas><br>
+<div id="levels"></div>
+<div id="stats"></div>
+
+<canvas id="game" width="900" height="450"></canvas>
+<br>
 <button onclick="resetGame()">RESTART</button>
 
-<!-- ONLY THIS SCRIPT IS VISIBLE -->
+<!-- GAME LOGIC (hidden from HTML view) -->
 <script src="game.js"></script>
 
 <!--
 © 2026 moty.
-Unauthorized copying or reuse is prohibited.
+Unauthorized copying, reuse, or redistribution is prohibited.
 -->
 </body>
 </html>
