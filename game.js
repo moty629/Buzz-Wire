@@ -12,13 +12,14 @@ window.addEventListener("load", () => {
   const levelsDiv = document.getElementById("levels");
 
   /* ========= STATE ========= */
-  let level = 0;          // current level
-  let unlockedLevel = 0;  // highest unlocked
+  let level = 0;
+  let unlockedLevel = 0;
 
+  let holding = false;
   let started = false;
   let onLine = false;
   let gameOver = false;
-  let levelCompleted = false;
+  let levelCompleted = false;   // 🔒 HARD LOCK
 
   let cursor = { x:0, y:0 };
   let lastCursor = { x:0, y:0 };
@@ -35,34 +36,14 @@ window.addEventListener("load", () => {
   const START = { x:40, y:210, w:35, h:35 };
   const END   = { x:830, y:205, w:40, h:40 };
 
-  /* ========= LEVELS (SEPARATE & SAFE) ========= */
-  const levels = [
-    { width:14, draw(){ ctx.moveTo(70,230); ctx.lineTo(860,230); } }, // 1
-    { width:12, draw(){ ctx.moveTo(70,230); ctx.bezierCurveTo(250,200,500,260,860,230); } }, // 2
-    { width:10, draw(){ ctx.moveTo(70,230); ctx.bezierCurveTo(200,160,400,300,860,230); } }, // 3
-    { width:9,  draw(){ ctx.moveTo(70,230); ctx.bezierCurveTo(180,120,380,340,860,230); } }, // 4
-    { width:8,  draw(){ ctx.moveTo(70,230); ctx.bezierCurveTo(200,80,420,380,860,230); } },  // 5
-    { width:7,  draw(){ ctx.moveTo(70,230); ctx.bezierCurveTo(160,100,300,360,500,150);
-                        ctx.bezierCurveTo(650,50,760,340,860,230); } }, // 6
-    { width:6,  draw(){ ctx.moveTo(70,230); ctx.bezierCurveTo(140,60,280,380,420,200);
-                        ctx.bezierCurveTo(560,40,700,360,860,230); } }, // 7
-    { width:5.5,draw(){ ctx.moveTo(70,230); ctx.bezierCurveTo(120,80,240,360,360,140);
-                        ctx.bezierCurveTo(480,60,600,380,720,200);
-                        ctx.bezierCurveTo(780,160,820,280,860,230); } }, // 8
-    { width:5,  draw(){ ctx.moveTo(70,230); ctx.bezierCurveTo(120,100,220,360,340,160);
-                        ctx.bezierCurveTo(460,80,580,360,700,180);
-                        ctx.bezierCurveTo(760,140,820,300,860,230); } }, // 9
-    { width:4,  draw(){ ctx.moveTo(70,230); ctx.bezierCurveTo(120,120,220,340,340,180);
-                        ctx.bezierCurveTo(460,140,580,320,700,200);
-                        ctx.bezierCurveTo(760,180,820,260,860,230); } }  // 10
-  ];
-
-  /* ========= UTIL ========= */
+  /* ========= RESET CANVAS ========= */
   function resetCanvas(){
     ctx.setTransform(1,0,0,1,0,0);
     ctx.font = "14px Arial";
+    ctx.lineWidth = 1;
   }
 
+  /* ========= TIME ========= */
   function getTimeMs(){
     return timerRunning
       ? elapsedTime + (performance.now() - startTime)
@@ -76,36 +57,35 @@ window.addEventListener("load", () => {
     }
   }
 
-  /* ========= UNLOCK ========= */
-  function unlockNextLevel(){
-    if (unlockedLevel === level && level < levels.length - 1) {
-      unlockedLevel++;
-    }
-    resetGame();
-  }
+  /* ========= LEVEL PATHS ========= */
+  const levels = [
+    { w:14, p(){ ctx.moveTo(70,230); ctx.lineTo(860,230); } }, // 1
+    { w:10, p(){ ctx.moveTo(70,230); ctx.bezierCurveTo(250,230,500,230,860,230); } }, // 2
+    { w:9,  p(){ ctx.moveTo(70,230); ctx.bezierCurveTo(200,180,400,280,860,230); } }, // 3
+    { w:8,  p(){ ctx.moveTo(70,230); ctx.bezierCurveTo(180,120,380,340,860,230); } }, // 4
+    { w:7,  p(){ ctx.moveTo(70,200); ctx.bezierCurveTo(200,420,420,40,860,230); } }, // 5
+    { w:6,  p(){ ctx.moveTo(70,230); ctx.bezierCurveTo(150,80,300,380,500,120); ctx.bezierCurveTo(650,-20,750,360,860,230); } },
+    { w:5.5,p(){ ctx.moveTo(70,230); ctx.bezierCurveTo(150,20,280,420,420,180); ctx.bezierCurveTo(560,-40,700,420,860,230); } },
+    { w:5,  p(){ ctx.moveTo(70,200); ctx.bezierCurveTo(140,400,260,40,400,300); ctx.bezierCurveTo(540,520,700,-80,860,230); } },
+    { w:4.5,p(){ ctx.moveTo(70,230); ctx.bezierCurveTo(120,20,240,420,360,120); ctx.bezierCurveTo(480,-80,600,520,720,180); ctx.bezierCurveTo(780,60,820,300,860,230); } },
+    { w:4,  p(){ ctx.moveTo(70,230); ctx.bezierCurveTo(120,0,220,460,340,140); ctx.bezierCurveTo(460,-120,580,560,700,160); ctx.bezierCurveTo(760,40,820,340,860,230); } }
+  ];
 
   /* ========= DRAW ========= */
   function drawPath(){
     ctx.beginPath();
-    ctx.strokeStyle = "lime";
-    ctx.lineWidth = levels[level].width;
-    levels[level].draw();
+    ctx.strokeStyle="lime";
+    ctx.lineWidth = levels[level].w;
+    levels[level].p();
     ctx.stroke();
   }
 
   function drawLevels(){
-    let txt = "";
+    let t="";
     for(let i=0;i<levels.length;i++){
-      txt += (i <= unlockedLevel ? "🟢" : "🔒") + " " + (i+1) + "  ";
+      t+=(i<=unlockedLevel?"🟢":"🔒")+" "+(i+1)+"  ";
     }
-    levelsDiv.textContent = txt;
-  }
-
-  function drawCursor(){
-    ctx.fillStyle = "yellow";
-    ctx.beginPath();
-    ctx.arc(cursor.x, cursor.y, 4, 0, Math.PI * 2);
-    ctx.fill();
+    levelsDiv.textContent = t;
   }
 
   function draw(){
@@ -117,24 +97,27 @@ window.addEventListener("load", () => {
 
     ctx.fillStyle="blue";
     ctx.fillRect(START.x,START.y,START.w,START.h);
+    ctx.fillStyle="white";
     ctx.fillText("START",START.x-2,START.y+START.h+14);
 
     ctx.fillStyle="red";
     ctx.fillRect(END.x,END.y,END.w,END.h);
     ctx.fillText("END",END.x+8,END.y-8);
 
-    drawCursor(); // 👈 CURSOR ALWAYS VISIBLE
+    const meters = (distancePx / PX_PER_METER).toFixed(2);
+    const seconds = (getTimeMs() / 1000).toFixed(2);
 
     statsDiv.textContent =
-      `Level ${level+1}/10 | Time ${(getTimeMs()/1000).toFixed(2)}s | Distance ${(distancePx/PX_PER_METER).toFixed(2)} m`;
+      `Level ${level+1}/10 | Time ${seconds}s | Distance ${meters} m`;
   }
 
   /* ========= GAME ========= */
   function resetGame(){
+    holding = false;
     started = false;
     onLine = false;
     gameOver = false;
-    levelCompleted = false;
+    levelCompleted = false;   // 🔓 UNLOCK
     distancePx = 0;
     elapsedTime = 0;
     timerRunning = false;
@@ -144,6 +127,7 @@ window.addEventListener("load", () => {
   function startGame(){
     if(level > unlockedLevel) return;
 
+    holding = true;
     started = true;
     onLine = false;
     gameOver = false;
@@ -187,15 +171,26 @@ window.addEventListener("load", () => {
       lastCursor = { ...cursor };
     }
 
+    // ✅ END — HARD LOCK
     if(
       cursor.x > END.x && cursor.x < END.x + END.w &&
       cursor.y > END.y && cursor.y < END.y + END.h
     ){
       levelCompleted = true;
-      started = false;
+      started = false;     // 🔥 KILL MOVEMENT
       stopTimer();
       successSound.play();
-      setTimeout(unlockNextLevel, 300);
+
+      setTimeout(()=>{
+        level = level + 1;
+        if(level >= levels.length){
+          level = 0;
+          unlockedLevel = 0;
+        }else{
+          unlockedLevel = level;
+        }
+        resetGame();
+      },300);
     }
 
     draw();
@@ -203,27 +198,42 @@ window.addEventListener("load", () => {
 
   /* ========= INPUT ========= */
   const pos = e=>{
-    const r = canvas.getBoundingClientRect();
-    return { x:e.clientX-r.left, y:e.clientY-r.top };
+    const r=canvas.getBoundingClientRect();
+    return {x:e.clientX-r.left,y:e.clientY-r.top};
   };
 
   canvas.addEventListener("mousedown",e=>{
-    cursor = pos(e);
-    lastCursor = { ...cursor };
-    if(
-      cursor.x>START.x && cursor.x<START.x+START.w &&
-      cursor.y>START.y && cursor.y<START.y+START.h
-    ) startGame();
+    cursor=pos(e); lastCursor={...cursor};
+    if(cursor.x>START.x&&cursor.x<START.x+START.w&&cursor.y>START.y&&cursor.y<START.y+START.h)
+      startGame();
   });
 
   canvas.addEventListener("mousemove",e=>{
-    cursor = pos(e);
+    cursor=pos(e);
     handleMove();
   });
 
-  canvas.addEventListener("mouseup",()=>{
+  canvas.addEventListener("mouseup",()=>{ if(started) lose(); });
+
+  canvas.addEventListener("touchstart",e=>{
+    e.preventDefault();
+    cursor=pos(e.touches[0]); lastCursor={...cursor};
+    if(cursor.x>START.x&&cursor.x<START.x+START.w&&cursor.y>START.y&&cursor.y<START.y+START.h)
+      startGame();
+  });
+
+  canvas.addEventListener("touchmove",e=>{
+    e.preventDefault();
+    cursor=pos(e.touches[0]);
+    handleMove();
+  });
+
+  canvas.addEventListener("touchend",e=>{
+    e.preventDefault();
     if(started) lose();
   });
+
+  window.resetGame = resetGame;
 
   draw();
 });
