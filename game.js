@@ -232,9 +232,11 @@ window.addEventListener("load", () => {
     }
 
     if(
+      !levelCompleted &&
       cursor.x>END.x&&cursor.x<END.x+END.w&&
       cursor.y>END.y&&cursor.y<END.y+END.h
     ){
+      levelCompleted = true; 
       stopTimer();
       successSound.play();
 
