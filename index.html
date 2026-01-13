@@ -11,23 +11,12 @@
     font-family: Arial, sans-serif;
     text-align: center;
     margin: 0;
-    padding: 0;
   }
 
-  h2 {
-    margin: 10px 0;
-  }
+  h2 { margin: 10px 0; }
 
-  #levels {
-    margin: 8px;
-    font-size: 18px;
-  }
-
-  #stats {
-    margin: 6px;
-    font-size: 18px;
-    color: #00ffcc;
-  }
+  #levels { margin: 8px; font-size: 18px; }
+  #stats  { margin: 6px; font-size: 18px; color: #00ffcc; }
 
   canvas {
     background: #000;
@@ -47,17 +36,12 @@
 <body>
 
 <h2>Buzz Wire Game</h2>
+<div id="levels"></div>
+<div id="stats"></div>
 
-<div id="levels">Loading levels...</div>
-<div id="stats">Loading...</div>
-
-<canvas id="game" width="900" height="450"></canvas>
-<br>
-
+<canvas id="game" width="900" height="450"></canvas><br>
 <button onclick="resetGame()">RESTART</button>
 
-<!-- GAME LOGIC -->
 <script src="game.js" defer></script>
-
 </body>
 </html>
