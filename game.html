@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Buzz Wire Game</title>
+<style>
+  body {
+    margin:0;
+    background:#111;
+    color:white;
+    font-family:Arial;
+    text-align:center;
+  }
+  #stats { color:#00ffcc; margin:6px; }
+  canvas { background:black; border:2px solid #555; }
+
+  #joystick {
+    position:absolute;
+    bottom:15px;
+    left:50%;
+    transform:translateX(-50%);
+    width:140px;
+    height:140px;
+    border-radius:50%;
+    border:3px solid #00ffcc;
+    touch-action:none;
+  }
+  #stick {
+    position:absolute;
+    width:50px;
+    height:50px;
+    border-radius:50%;
+    background:#00ffcc;
+    left:45px; top:45px;
+  }
+  #overlay {
+    position:absolute;
+    inset:0;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    font-size:48px;
+    color:red;
+    background:rgba(0,0,0,.6);
+  }
+</style>
+</head>
+<body>
+
+<h2 id="title"></h2>
+<div id="stats">Use joystick</div>
+
+<div style="position:relative;width:900px;margin:auto">
+  <canvas id="game" width="900" height="450"></canvas>
+  <div id="joystick"><div id="stick"></div></div>
+  <div id="overlay">LOOOOOOSER</div>
+</div>
+
+<button onclick="restart()">RESTART LEVEL</button>
+
+<script src="game.js"></script>
+</body>
+</html>
