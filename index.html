@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Buzz Wire – Center Joystick</title>
+<title>Buzz Wire – Bottom Center Joystick</title>
 
 <style>
   body {
@@ -36,14 +36,14 @@
     display: block;
   }
 
-  /* ===== CENTER JOYSTICK ===== */
+  /* ===== JOYSTICK BOTTOM CENTER ===== */
   #joystick {
     position: absolute;
     left: 50%;
-    top: 50%;
+    bottom: 15px;              /* 🔽 bottom */
+    transform: translateX(-50%);
     width: 140px;
     height: 140px;
-    transform: translate(-50%, -50%);
     border-radius: 50%;
     border: 3px solid #00ffcc;
     background: rgba(255,255,255,0.08);
@@ -70,6 +70,7 @@
     font-weight: bold;
     color: red;
     background: rgba(0,0,0,0.6);
+    pointer-events: none;
   }
 </style>
 </head>
@@ -82,7 +83,7 @@
 <div id="container">
   <canvas id="game" width="900" height="450"></canvas>
 
-  <!-- CENTER JOYSTICK -->
+  <!-- JOYSTICK -->
   <div id="joystick">
     <div id="stick"></div>
   </div>
@@ -113,7 +114,6 @@ window.addEventListener("load", () => {
 
   /* ========= GAME OBJECTS ========= */
   const START = { x:40, y:210, w:35, h:35 };
-  const END   = { x:830, y:205, w:40, h:40 };
 
   let started = false;
   let enteredWire = false;
@@ -139,15 +139,9 @@ window.addEventListener("load", () => {
 
     drawPath();
 
-    // START
     ctx.fillStyle="blue";
     ctx.fillRect(START.x,START.y,START.w,START.h);
 
-    // END
-    ctx.fillStyle="red";
-    ctx.fillRect(END.x,END.y,END.w,END.h);
-
-    // CURSOR
     ctx.beginPath();
     ctx.arc(cursor.x, cursor.y, 3, 0, Math.PI*2);
     ctx.fillStyle="#0066ff";
