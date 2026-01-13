@@ -1,111 +1,184 @@
-const url = new URLSearchParams(location.search);
-const level = Number(url.get("level")) || 1;
+/* ========= LEVEL SETUP ========= */
+const params = new URLSearchParams(window.location.search);
+const level = Number(params.get("level")) || 1;
+
 document.getElementById("title").textContent = `Level ${level}`;
 
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
+
 const overlay = document.getElementById("overlay");
-const stick = document.getElementById("stick");
 const joystick = document.getElementById("joystick");
+const stick = document.getElementById("stick");
 
-const START = {x:40,y:210,w:40,h:40};
-const END   = {x:820,y:210,w:40,h:40};
+/* ========= CONSTANTS ========= */
+const START = { x: 40, y: 205, w: 40, h: 40 };
+const END   = { x: 820, y: 205, w: 40, h: 40 };
 
-let cursor = {x:START.x+20,y:START.y+20};
-let joyDX=0, joyDY=0, joyActive=false;
-let enteredWire=false, gameOver=false;
+const JOY_RADIUS = 70;
+const STICK_RADIUS = 25;
 
-const SPEED = 2 + level*0.4;
+const SPEED = 2 + level * 0.4;
 
-/* ===== LEVEL PATHS ===== */
+/* ========= STATE ========= */
+let cursor = {
+  x: START.x + START.w / 2,
+  y: START.y + START.h / 2
+};
+
+let joyDX = 0;
+let joyDY = 0;
+let joyActive = false;
+
+let enteredWire = false;   // 👈 critical flag
+let gameOver = false;
+
+/* ========= DRAW PATH (LEVEL DIFFICULTY) ========= */
 function drawPath(){
   ctx.beginPath();
-  ctx.strokeStyle="lime";
-  ctx.lineWidth = 14 - level;
-  ctx.moveTo(80,230);
+  ctx.strokeStyle = "lime";
+  ctx.lineWidth = Math.max(4, 16 - level); // level 1 thick → level 10 thin
+  ctx.moveTo(80, 225);
 
-  if(level<4) ctx.lineTo(860,230);
-  else ctx.bezierCurveTo(200,80,600,380,860,230);
+  if(level <= 3){
+    ctx.lineTo(860, 225);
+  } else if(level <= 6){
+    ctx.bezierCurveTo(200, 80, 600, 380, 860, 225);
+  } else {
+    ctx.bezierCurveTo(150, 50, 300, 400, 450, 100);
+    ctx.bezierCurveTo(600, -50, 750, 450, 860, 225);
+  }
 
   ctx.stroke();
 }
 
+/* ========= DRAW ========= */
 function draw(){
-  ctx.clearRect(0,0,900,450);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // wire
   drawPath();
 
-  ctx.fillStyle="blue";
-  ctx.fillRect(START.x,START.y,START.w,START.h);
-  ctx.fillStyle="white";
-  ctx.fillText("START",START.x,START.y-5);
+  // START
+  ctx.fillStyle = "blue";
+  ctx.fillRect(START.x, START.y, START.w, START.h);
+  ctx.fillStyle = "white";
+  ctx.fillText("START", START.x - 2, START.y - 6);
 
-  ctx.fillStyle="red";
-  ctx.fillRect(END.x,END.y,END.w,END.h);
-  ctx.fillText("END",END.x,END.y-5);
+  // END
+  ctx.fillStyle = "red";
+  ctx.fillRect(END.x, END.y, END.w, END.h);
+  ctx.fillStyle = "white";
+  ctx.fillText("END", END.x + 2, END.y - 6);
 
+  // 🔴 CURSOR
   ctx.beginPath();
-  ctx.arc(cursor.x,cursor.y,3,0,Math.PI*2);
-  ctx.fillStyle="#00f";
+  ctx.arc(cursor.x, cursor.y, 3, 0, Math.PI * 2);
+  ctx.fillStyle = "red";
   ctx.fill();
 }
 
+/* ========= GAME LOOP ========= */
 function update(){
   if(joyActive && !gameOver){
-    cursor.x += joyDX*SPEED;
-    cursor.y += joyDY*SPEED;
+    cursor.x += joyDX * SPEED;
+    cursor.y += joyDY * SPEED;
 
-    const inside = ctx.isPointInStroke(cursor.x,cursor.y);
+    // stay inside canvas
+    cursor.x = Math.max(0, Math.min(canvas.width, cursor.x));
+    cursor.y = Math.max(0, Math.min(canvas.height, cursor.y));
 
-    if(!enteredWire && inside) enteredWire=true;
-    if(enteredWire && !inside) lose();
+    const insideWire = ctx.isPointInStroke(cursor.x, cursor.y);
 
-    if(cursor.x>END.x && cursor.x<END.x+END.w &&
-       cursor.y>END.y && cursor.y<END.y+END.h){
+    // first time touching wire
+    if(!enteredWire && insideWire){
+      enteredWire = true;
+    }
+
+    // ❌ FAIL ONLY AFTER ENTERING
+    if(enteredWire && !insideWire){
+      lose();
+    }
+
+    // WIN
+    if(
+      cursor.x > END.x && cursor.x < END.x + END.w &&
+      cursor.y > END.y && cursor.y < END.y + END.h
+    ){
       win();
     }
   }
+
   draw();
   requestAnimationFrame(update);
 }
 
+/* ========= END STATES ========= */
 function lose(){
-  gameOver=true;
-  overlay.style.display="flex";
+  if(gameOver) return;
+  gameOver = true;
+  overlay.style.display = "flex";
 }
 
 function win(){
-  let unlocked = Number(localStorage.getItem("unlockedLevel"))||1;
-  if(level>=unlocked) localStorage.setItem("unlockedLevel", level+1);
-  location.href="index.html";
+  let unlocked = Number(localStorage.getItem("unlockedLevel")) || 1;
+  if(level >= unlocked){
+    localStorage.setItem("unlockedLevel", level + 1);
+  }
+  window.location.href = "index.html";
 }
 
 function restart(){
-  location.reload();
+  window.location.reload();
 }
 
-/* ===== JOYSTICK ===== */
-joystick.onpointerdown=e=>{
-  joyActive=true;
+/* ========= JOYSTICK INPUT ========= */
+joystick.addEventListener("pointerdown", e => {
+  if(gameOver) return;
+  joyActive = true;
   joystick.setPointerCapture(e.pointerId);
-};
-joystick.onpointermove=e=>{
-  if(!joyActive||gameOver) return;
-  const r=joystick.getBoundingClientRect();
-  let x=e.clientX-r.left-70;
-  let y=e.clientY-r.top-70;
-  const d=Math.hypot(x,y);
-  if(d>70){x*=70/d;y*=70/d;}
-  stick.style.left=(x+70-25)+"px";
-  stick.style.top =(y+70-25)+"px";
-  joyDX=x/70; joyDY=y/70;
-};
-joystick.onpointerup=()=>{
-  joyActive=false;
-  joyDX=joyDY=0;
-  stick.style.left="45px";
-  stick.style.top="45px";
-  lose(); // 👈 taking hand off = LOOSER
-};
+});
 
+joystick.addEventListener("pointermove", e => {
+  if(!joyActive || gameOver) return;
+
+  const rect = joystick.getBoundingClientRect();
+  let x = e.clientX - rect.left - JOY_RADIUS;
+  let y = e.clientY - rect.top  - JOY_RADIUS;
+
+  const dist = Math.hypot(x, y);
+  if(dist > JOY_RADIUS){
+    x *= JOY_RADIUS / dist;
+    y *= JOY_RADIUS / dist;
+  }
+
+  stick.style.left = (x + JOY_RADIUS - STICK_RADIUS) + "px";
+  stick.style.top  = (y + JOY_RADIUS - STICK_RADIUS) + "px";
+
+  joyDX = x / JOY_RADIUS;
+  joyDY = y / JOY_RADIUS;
+});
+
+joystick.addEventListener("pointerup", () => {
+  joyActive = false;
+  joyDX = joyDY = 0;
+
+  stick.style.left = "45px";
+  stick.style.top  = "45px";
+
+  // ❌ hand-off fails ONLY if wire already entered
+  if(enteredWire && !gameOver){
+    lose();
+  }
+});
+
+joystick.addEventListener("pointercancel", () => {
+  joyActive = false;
+  joyDX = joyDY = 0;
+  stick.style.left = "45px";
+  stick.style.top  = "45px";
+});
+
+/* ========= START ========= */
 draw();
 update();
