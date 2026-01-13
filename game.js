@@ -21,14 +21,11 @@ window.addEventListener("load", () => {
   /* ========= STATE ========= */
   let level = 0;
   let unlockedLevel = 0;
-
   let started = false;
-  let holding = false;
   let onLine = false;
   let gameOver = false;
   let levelCompleted = false;
 
-  // 🔵 CURSOR STARTS AT START BOX (VISIBLE IMMEDIATELY)
   let cursor = {
     x: START.x + START.w / 2,
     y: START.y + START.h / 2
@@ -42,14 +39,6 @@ window.addEventListener("load", () => {
   let elapsedTime = 0;
   let timerRunning = false;
 
-  /* ========= CANVAS RESET ========= */
-  function resetCanvas(){
-    ctx.setTransform(1,0,0,1,0,0);
-    ctx.font = "14px Arial";
-    ctx.lineWidth = 1;
-  }
-
-  /* ========= TIME ========= */
   function getTimeMs(){
     return timerRunning
       ? elapsedTime + (performance.now() - startTime)
@@ -63,40 +52,12 @@ window.addEventListener("load", () => {
     }
   }
 
-  /* ========= LEVEL PATHS ========= */
+  /* ========= LEVELS ========= */
   const levels = [
     { w:14, p(){ ctx.moveTo(70,230); ctx.lineTo(860,230); } },
     { w:10, p(){ ctx.moveTo(70,230); ctx.bezierCurveTo(250,230,500,230,860,230); } },
     { w:9,  p(){ ctx.moveTo(70,230); ctx.bezierCurveTo(200,180,400,280,860,230); } },
-    { w:8,  p(){ ctx.moveTo(70,230); ctx.bezierCurveTo(180,120,380,340,860,230); } },
-    { w:7,  p(){ ctx.moveTo(70,200); ctx.bezierCurveTo(200,420,420,40,860,230); } },
-    { w:6,  p(){
-        ctx.moveTo(70,230);
-        ctx.bezierCurveTo(150,80,300,380,500,120);
-        ctx.bezierCurveTo(650,-20,750,360,860,230);
-      }},
-    { w:5.5,p(){
-        ctx.moveTo(70,230);
-        ctx.bezierCurveTo(150,20,280,420,420,180);
-        ctx.bezierCurveTo(560,-40,700,420,860,230);
-      }},
-    { w:5,  p(){
-        ctx.moveTo(70,200);
-        ctx.bezierCurveTo(140,400,260,40,400,300);
-        ctx.bezierCurveTo(540,520,700,-80,860,230);
-      }},
-    { w:4.5,p(){
-        ctx.moveTo(70,230);
-        ctx.bezierCurveTo(120,20,240,420,360,120);
-        ctx.bezierCurveTo(480,-80,600,520,720,180);
-        ctx.bezierCurveTo(780,60,820,300,860,230);
-      }},
-    { w:4,  p(){
-        ctx.moveTo(70,230);
-        ctx.bezierCurveTo(120,0,220,460,340,140);
-        ctx.bezierCurveTo(460,-120,580,560,700,160);
-        ctx.bezierCurveTo(760,40,820,340,860,230);
-      }}
+    { w:8,  p(){ ctx.moveTo(70,230); ctx.bezierCurveTo(180,120,380,340,860,230); } }
   ];
 
   /* ========= DRAW ========= */
@@ -109,80 +70,52 @@ window.addEventListener("load", () => {
   }
 
   function drawLevels(){
-    let t="";
-    for(let i=0;i<levels.length;i++){
-      t += (i<=unlockedLevel ? "🟢" : "🔒") + " " + (i+1) + "  ";
-    }
-    levelsDiv.textContent = t;
+    levelsDiv.textContent = levels
+      .map((_,i)=> (i<=unlockedLevel?"🟢":"🔒")+" "+(i+1))
+      .join("  ");
   }
 
   function draw(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
-    resetCanvas();
-
     drawLevels();
     drawPath();
 
-    // START
     ctx.fillStyle="blue";
     ctx.fillRect(START.x,START.y,START.w,START.h);
     ctx.fillStyle="white";
     ctx.fillText("START",START.x-2,START.y+START.h+14);
 
-    // END
     ctx.fillStyle="red";
     ctx.fillRect(END.x,END.y,END.w,END.h);
     ctx.fillText("END",END.x+8,END.y-8);
 
-    // 🔵 SMALL BLUE CURSOR (ALWAYS VISIBLE)
     ctx.beginPath();
-    ctx.arc(cursor.x, cursor.y, CURSOR_RADIUS, 0, Math.PI * 2);
-    ctx.fillStyle = "#0066ff";
+    ctx.arc(cursor.x, cursor.y, CURSOR_RADIUS, 0, Math.PI*2);
+    ctx.fillStyle="#0066ff";
     ctx.fill();
 
-    const meters  = (distancePx / PX_PER_METER).toFixed(2);
-    const seconds = (getTimeMs() / 1000).toFixed(2);
-
     statsDiv.textContent =
-      `Level ${level+1}/10 | Time ${seconds}s | Distance ${meters} m`;
+      `Level ${level+1}/${levels.length} | Time ${(getTimeMs()/1000).toFixed(2)}s | Distance ${(distancePx/PX_PER_METER).toFixed(2)} m`;
   }
 
-  /* ========= GAME ========= */
+  /* ========= GAME FLOW ========= */
   function resetGame(){
-    started = false;
-    holding = false;
-    onLine = false;
-    gameOver = false;
-    levelCompleted = false;
-
-    distancePx = 0;
-    elapsedTime = 0;
+    started = onLine = gameOver = levelCompleted = false;
+    distancePx = elapsedTime = 0;
     timerRunning = false;
-
-    // 🔵 RESET CURSOR TO START (VISIBLE AFTER RESTART)
-    cursor = {
-      x: START.x + START.w / 2,
-      y: START.y + START.h / 2
-    };
+    cursor.x = START.x + START.w/2;
+    cursor.y = START.y + START.h/2;
     lastCursor = { ...cursor };
-
     draw();
   }
 
   function startGame(){
-    if(level > unlockedLevel) return;
-
     started = true;
-    holding = true;
     onLine = false;
-    gameOver = false;
-    levelCompleted = false;
-
     distancePx = 0;
     elapsedTime = 0;
     startTime = performance.now();
     timerRunning = true;
-
     startSound.play();
   }
 
@@ -210,30 +143,18 @@ window.addEventListener("load", () => {
     }
 
     if(onLine){
-      const dx = cursor.x - lastCursor.x;
-      const dy = cursor.y - lastCursor.y;
-      distancePx += Math.sqrt(dx*dx + dy*dy);
+      distancePx += Math.hypot(cursor.x-lastCursor.x, cursor.y-lastCursor.y);
       lastCursor = { ...cursor };
     }
 
-    // END — HARD LOCK
-    if(
-      cursor.x > END.x && cursor.x < END.x + END.w &&
-      cursor.y > END.y && cursor.y < END.y + END.h
-    ){
+    if(cursor.x>END.x && cursor.x<END.x+END.w &&
+       cursor.y>END.y && cursor.y<END.y+END.h){
       levelCompleted = true;
-      started = false;
       stopTimer();
       successSound.play();
-
       setTimeout(()=>{
-        level++;
-        if(level >= levels.length){
-          level = 0;
-          unlockedLevel = 0;
-        } else {
-          unlockedLevel = level;
-        }
+        level = (level+1)%levels.length;
+        unlockedLevel = Math.max(unlockedLevel, level);
         resetGame();
       },300);
     }
@@ -242,17 +163,18 @@ window.addEventListener("load", () => {
   }
 
   /* ========= INPUT ========= */
+
+  // Mouse (absolute)
   const pos = e => {
     const r = canvas.getBoundingClientRect();
-    return { x:e.clientX - r.left, y:e.clientY - r.top };
+    return { x:e.clientX-r.left, y:e.clientY-r.top };
   };
 
   canvas.addEventListener("mousedown",e=>{
     cursor = pos(e);
     lastCursor = { ...cursor };
     if(cursor.x>START.x && cursor.x<START.x+START.w &&
-       cursor.y>START.y && cursor.y<START.y+START.h)
-      startGame();
+       cursor.y>START.y && cursor.y<START.y+START.h) startGame();
   });
 
   canvas.addEventListener("mousemove",e=>{
@@ -260,31 +182,36 @@ window.addEventListener("load", () => {
     handleMove();
   });
 
-  canvas.addEventListener("mouseup",()=>{
-    if(started) lose();
-  });
+  canvas.addEventListener("mouseup",()=> started && lose());
+
+  // Touch (relative)
+  let lastTouchX=null, lastTouchY=null;
 
   canvas.addEventListener("touchstart",e=>{
     e.preventDefault();
-    cursor = pos(e.touches[0]);
-    lastCursor = { ...cursor };
+    const t=e.touches[0];
+    lastTouchX=t.clientX; lastTouchY=t.clientY;
     if(cursor.x>START.x && cursor.x<START.x+START.w &&
-       cursor.y>START.y && cursor.y<START.y+START.h)
-      startGame();
+       cursor.y>START.y && cursor.y<START.y+START.h) startGame();
   });
 
   canvas.addEventListener("touchmove",e=>{
     e.preventDefault();
-    cursor = pos(e.touches[0]);
+    if(lastTouchX===null) return;
+    const t=e.touches[0];
+    cursor.x += t.clientX-lastTouchX;
+    cursor.y += t.clientY-lastTouchY;
+    cursor.x=Math.max(0,Math.min(canvas.width,cursor.x));
+    cursor.y=Math.max(0,Math.min(canvas.height,cursor.y));
+    lastTouchX=t.clientX; lastTouchY=t.clientY;
     handleMove();
   });
 
-  canvas.addEventListener("touchend",e=>{
-    e.preventDefault();
-    if(started) lose();
+  canvas.addEventListener("touchend",()=>{
+    lastTouchX=lastTouchY=null;
+    started && lose();
   });
 
   window.resetGame = resetGame;
-
   draw();
 });
