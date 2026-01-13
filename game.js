@@ -28,6 +28,8 @@ let cursor = {
 let joyDX = 0;
 let joyDY = 0;
 let joyActive = false;
+
+let hasStarted = false;   // 🔑 NEW FLAG
 let gameOver = false;
 
 /* ========= DRAW WIRE ========= */
@@ -76,13 +78,22 @@ function draw(){
 
 /* ========= GAME LOOP ========= */
 function update(){
-  if(gameOver) return;
+  if(gameOver){
+    draw();
+    return;
+  }
+
+  // ❗ DO NOTHING UNTIL JOYSTICK TOUCHED
+  if(!hasStarted){
+    draw();
+    requestAnimationFrame(update);
+    return;
+  }
 
   if(joyActive){
     cursor.x += joyDX * SPEED;
     cursor.y += joyDY * SPEED;
 
-    // keep inside canvas
     cursor.x = Math.max(0, Math.min(canvas.width, cursor.x));
     cursor.y = Math.max(0, Math.min(canvas.height, cursor.y));
 
@@ -128,6 +139,8 @@ function restart(){
 /* ========= JOYSTICK ========= */
 joystick.addEventListener("pointerdown", e => {
   if(gameOver) return;
+
+  hasStarted = true;   // 🔥 GAME STARTS HERE
   joyActive = true;
   joystick.setPointerCapture(e.pointerId);
 });
@@ -160,8 +173,10 @@ joystick.addEventListener("pointerup", () => {
   stick.style.left = "45px";
   stick.style.top  = "45px";
 
-  // ✋ HAND OFF = STOP = LOOSER
-  lose();
+  // ✋ Hand off after start = LOOSER
+  if(hasStarted){
+    lose();
+  }
 });
 
 joystick.addEventListener("pointercancel", () => {
@@ -170,7 +185,9 @@ joystick.addEventListener("pointercancel", () => {
   joyDX = joyDY = 0;
   stick.style.left = "45px";
   stick.style.top  = "45px";
-  lose();
+  if(hasStarted){
+    lose();
+  }
 });
 
 /* ========= START ========= */
