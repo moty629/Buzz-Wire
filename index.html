@@ -8,9 +8,23 @@
   body {
     margin: 0;
     background: #111;
-    color: white;
+    color: #fff;
     font-family: Arial, sans-serif;
     text-align: center;
+  }
+
+  h2 { margin: 10px 0; }
+
+  #container {
+    position: relative;
+    width: 900px;
+    margin: auto;
+  }
+
+  canvas {
+    background: #000;
+    border: 2px solid #555;
+    display: block;
   }
 
   #stats {
@@ -18,16 +32,9 @@
     color: #00ffcc;
   }
 
-  canvas {
-    background: black;
-    border: 2px solid #555;
-    display: block;
-    margin: auto;
-  }
-
-  /* ===== JOYSTICK ===== */
+  /* ===== JOYSTICK INSIDE PAGE ===== */
   #joystick {
-    position: fixed;
+    position: absolute;
     bottom: 20px;
     left: 20px;
     width: 120px;
@@ -42,8 +49,8 @@
     position: absolute;
     width: 50px;
     height: 50px;
-    background: #00ffcc;
     border-radius: 50%;
+    background: #00ffcc;
     left: 35px;
     top: 35px;
   }
@@ -53,13 +60,15 @@
 <body>
 
 <h2>Buzz Wire Game – Joystick Mode</h2>
-<div id="stats">Use the joystick to move</div>
+<div id="stats">Click / touch the joystick to start</div>
 
-<canvas id="game" width="900" height="450"></canvas>
+<div id="container">
+  <canvas id="game" width="900" height="450"></canvas>
 
-<!-- JOYSTICK -->
-<div id="joystick">
-  <div id="stick"></div>
+  <!-- JOYSTICK INSIDE PAGE -->
+  <div id="joystick">
+    <div id="stick"></div>
+  </div>
 </div>
 
 <script>
@@ -90,8 +99,8 @@ window.addEventListener("load", () => {
   let gameOver = false;
 
   let cursor = {
-    x: START.x + START.w/2,
-    y: START.y + START.h/2
+    x: START.x + START.w / 2,
+    y: START.y + START.h / 2
   };
 
   /* ========= DRAW ========= */
@@ -109,28 +118,31 @@ window.addEventListener("load", () => {
 
     drawPath();
 
+    // START
     ctx.fillStyle="blue";
     ctx.fillRect(START.x,START.y,START.w,START.h);
     ctx.fillStyle="white";
     ctx.fillText("START",START.x-2,START.y+START.h+14);
 
+    // END
     ctx.fillStyle="red";
     ctx.fillRect(END.x,END.y,END.w,END.h);
     ctx.fillText("END",END.x+8,END.y-8);
 
+    // CURSOR
     ctx.beginPath();
     ctx.arc(cursor.x, cursor.y, 3, 0, Math.PI*2);
-    ctx.fillStyle="#00f";
+    ctx.fillStyle="#0066ff";
     ctx.fill();
   }
 
-  /* ========= GAME LOGIC ========= */
+  /* ========= GAME LOOP ========= */
   function update(){
-    if(joyActive && started && !gameOver){
+    if(started && joyActive && !gameOver){
       cursor.x += joyDX * SPEED;
       cursor.y += joyDY * SPEED;
 
-      // boundaries
+      // keep inside canvas
       cursor.x = Math.max(0, Math.min(canvas.width, cursor.x));
       cursor.y = Math.max(0, Math.min(canvas.height, cursor.y));
 
@@ -140,7 +152,7 @@ window.addEventListener("load", () => {
         gameOver = true;
       }
 
-      // end
+      // end check
       if(
         cursor.x > END.x && cursor.x < END.x + END.w &&
         cursor.y > END.y && cursor.y < END.y + END.h
@@ -154,9 +166,11 @@ window.addEventListener("load", () => {
     requestAnimationFrame(update);
   }
 
-  /* ========= JOYSTICK INPUT ========= */
+  /* ========= JOYSTICK INPUT (360°) ========= */
   joystick.addEventListener("pointerdown", e => {
     joyActive = true;
+    started = true; // 🔥 CLICK JOYSTICK TO START
+    stats.textContent = "Game started – use joystick";
     joystick.setPointerCapture(e.pointerId);
   });
 
@@ -167,15 +181,17 @@ window.addEventListener("load", () => {
     let x = e.clientX - rect.left - JOY_RADIUS;
     let y = e.clientY - rect.top  - JOY_RADIUS;
 
-    const dist = Math.hypot(x,y);
+    const dist = Math.hypot(x, y);
     if(dist > JOY_RADIUS){
       x *= JOY_RADIUS / dist;
       y *= JOY_RADIUS / dist;
     }
 
+    // move stick visually
     stick.style.left = (x + JOY_RADIUS - STICK_RADIUS) + "px";
     stick.style.top  = (y + JOY_RADIUS - STICK_RADIUS) + "px";
 
+    // normalize (-1 to +1) for full 360°
     joyDX = x / JOY_RADIUS;
     joyDY = y / JOY_RADIUS;
   });
@@ -183,23 +199,17 @@ window.addEventListener("load", () => {
   joystick.addEventListener("pointerup", () => {
     joyActive = false;
     joyDX = joyDY = 0;
+
+    // return stick to center
     stick.style.left = "35px";
     stick.style.top  = "35px";
   });
 
-  /* ========= START GAME ========= */
-  canvas.addEventListener("click", e => {
-    const r = canvas.getBoundingClientRect();
-    const x = e.clientX - r.left;
-    const y = e.clientY - r.top;
-
-    if(
-      x > START.x && x < START.x + START.w &&
-      y > START.y && y < START.y + START.h
-    ){
-      started = true;
-      stats.textContent = "Game Started – use joystick";
-    }
+  joystick.addEventListener("pointercancel", () => {
+    joyActive = false;
+    joyDX = joyDY = 0;
+    stick.style.left = "35px";
+    stick.style.top  = "35px";
   });
 
   draw();
