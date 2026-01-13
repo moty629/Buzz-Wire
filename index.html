@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Buzz Wire – Joystick Control</title>
+<title>Buzz Wire – Center Joystick</title>
 
 <style>
   body {
@@ -10,15 +10,24 @@
     background: #111;
     color: #fff;
     font-family: Arial, sans-serif;
-    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
 
-  h2 { margin: 10px 0; }
+  h2 {
+    margin: 10px 0 4px;
+  }
+
+  #stats {
+    color: #00ffcc;
+    margin-bottom: 6px;
+    font-size: 18px;
+  }
 
   #container {
     position: relative;
     width: 900px;
-    margin: auto;
   }
 
   canvas {
@@ -27,21 +36,17 @@
     display: block;
   }
 
-  #stats {
-    margin: 6px;
-    color: #00ffcc;
-  }
-
-  /* ===== JOYSTICK INSIDE PAGE ===== */
+  /* ===== CENTER JOYSTICK ===== */
   #joystick {
     position: absolute;
-    bottom: 20px;
-    left: 20px;
-    width: 120px;
-    height: 120px;
+    left: 50%;
+    top: 50%;
+    width: 140px;
+    height: 140px;
+    transform: translate(-50%, -50%);
     border-radius: 50%;
-    background: rgba(255,255,255,0.1);
-    border: 2px solid #00ffcc;
+    border: 3px solid #00ffcc;
+    background: rgba(255,255,255,0.08);
     touch-action: none;
   }
 
@@ -51,24 +56,38 @@
     height: 50px;
     border-radius: 50%;
     background: #00ffcc;
-    left: 35px;
-    top: 35px;
+    left: 45px;
+    top: 45px;
+  }
+
+  #overlay {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    font-weight: bold;
+    color: red;
+    background: rgba(0,0,0,0.6);
   }
 </style>
 </head>
 
 <body>
 
-<h2>Buzz Wire Game – Joystick Mode</h2>
-<div id="stats">Click / touch the joystick to start</div>
+<h2>Buzz Wire Game</h2>
+<div id="stats">Move joystick to start</div>
 
 <div id="container">
   <canvas id="game" width="900" height="450"></canvas>
 
-  <!-- JOYSTICK INSIDE PAGE -->
+  <!-- CENTER JOYSTICK -->
   <div id="joystick">
     <div id="stick"></div>
   </div>
+
+  <div id="overlay">LOOOOOOSER</div>
 </div>
 
 <script>
@@ -78,14 +97,15 @@ window.addEventListener("load", () => {
   const canvas = document.getElementById("game");
   const ctx = canvas.getContext("2d");
   const stats = document.getElementById("stats");
+  const overlay = document.getElementById("overlay");
 
   /* ========= JOYSTICK ========= */
   const joystick = document.getElementById("joystick");
   const stick = document.getElementById("stick");
 
-  const JOY_RADIUS = 60;
+  const JOY_RADIUS = 70;
   const STICK_RADIUS = 25;
-  const SPEED = 3; // cursor speed
+  const SPEED = 3;
 
   let joyActive = false;
   let joyDX = 0;
@@ -96,6 +116,7 @@ window.addEventListener("load", () => {
   const END   = { x:830, y:205, w:40, h:40 };
 
   let started = false;
+  let enteredWire = false;
   let gameOver = false;
 
   let cursor = {
@@ -121,13 +142,10 @@ window.addEventListener("load", () => {
     // START
     ctx.fillStyle="blue";
     ctx.fillRect(START.x,START.y,START.w,START.h);
-    ctx.fillStyle="white";
-    ctx.fillText("START",START.x-2,START.y+START.h+14);
 
     // END
     ctx.fillStyle="red";
     ctx.fillRect(END.x,END.y,END.w,END.h);
-    ctx.fillText("END",END.x+8,END.y-8);
 
     // CURSOR
     ctx.beginPath();
@@ -142,23 +160,20 @@ window.addEventListener("load", () => {
       cursor.x += joyDX * SPEED;
       cursor.y += joyDY * SPEED;
 
-      // keep inside canvas
       cursor.x = Math.max(0, Math.min(canvas.width, cursor.x));
       cursor.y = Math.max(0, Math.min(canvas.height, cursor.y));
 
-      // wire collision
-      if(!ctx.isPointInStroke(cursor.x, cursor.y)){
-        stats.textContent = "❌ You touched the wire";
-        gameOver = true;
+      const inside = ctx.isPointInStroke(cursor.x, cursor.y);
+
+      if(!enteredWire && inside){
+        enteredWire = true;
+        stats.textContent = "On the wire… steady!";
       }
 
-      // end check
-      if(
-        cursor.x > END.x && cursor.x < END.x + END.w &&
-        cursor.y > END.y && cursor.y < END.y + END.h
-      ){
-        stats.textContent = "✅ Level Complete";
+      if(enteredWire && !inside){
         gameOver = true;
+        overlay.style.display = "flex";
+        stats.textContent = "OUT OF WIRE";
       }
     }
 
@@ -166,16 +181,16 @@ window.addEventListener("load", () => {
     requestAnimationFrame(update);
   }
 
-  /* ========= JOYSTICK INPUT (360°) ========= */
+  /* ========= JOYSTICK INPUT ========= */
   joystick.addEventListener("pointerdown", e => {
     joyActive = true;
-    started = true; // 🔥 CLICK JOYSTICK TO START
-    stats.textContent = "Game started – use joystick";
+    started = true;
+    stats.textContent = "Game started";
     joystick.setPointerCapture(e.pointerId);
   });
 
   joystick.addEventListener("pointermove", e => {
-    if(!joyActive) return;
+    if(!joyActive || gameOver) return;
 
     const rect = joystick.getBoundingClientRect();
     let x = e.clientX - rect.left - JOY_RADIUS;
@@ -187,30 +202,22 @@ window.addEventListener("load", () => {
       y *= JOY_RADIUS / dist;
     }
 
-    // move stick visually
     stick.style.left = (x + JOY_RADIUS - STICK_RADIUS) + "px";
     stick.style.top  = (y + JOY_RADIUS - STICK_RADIUS) + "px";
 
-    // normalize (-1 to +1) for full 360°
     joyDX = x / JOY_RADIUS;
     joyDY = y / JOY_RADIUS;
   });
 
-  joystick.addEventListener("pointerup", () => {
+  function releaseStick(){
     joyActive = false;
     joyDX = joyDY = 0;
+    stick.style.left = "45px";
+    stick.style.top  = "45px";
+  }
 
-    // return stick to center
-    stick.style.left = "35px";
-    stick.style.top  = "35px";
-  });
-
-  joystick.addEventListener("pointercancel", () => {
-    joyActive = false;
-    joyDX = joyDY = 0;
-    stick.style.left = "35px";
-    stick.style.top  = "35px";
-  });
+  joystick.addEventListener("pointerup", releaseStick);
+  joystick.addEventListener("pointercancel", releaseStick);
 
   draw();
   update();
